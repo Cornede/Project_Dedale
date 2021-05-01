@@ -1,6 +1,5 @@
 package eu.su.mas.dedaleEtu.mas.behaviours;
 
-import eu.su.mas.dedaleEtu.mas.agents.dummies.explo.FSMExploAgent;
 import jade.core.Agent;
 import jade.core.behaviours.SimpleBehaviour;
 import jade.domain.DFService;

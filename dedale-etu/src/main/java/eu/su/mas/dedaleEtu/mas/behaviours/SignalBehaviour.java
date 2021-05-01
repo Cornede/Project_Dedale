@@ -45,8 +45,13 @@ public class SignalBehaviour extends OneShotBehaviour{
 	@SuppressWarnings({ "unchecked", "unlikely-arg-type" })
 	@Override
 	public void action() {
-		
-		System.out.println(this.myAgent.getLocalName() + " <-- MODE : " + ((FSMExploAgent) this.myAgent).getMode());
+
+		if (((FSMExploAgent) this.myAgent).getMode()==0) {
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Mode - EXPLORATION");
+		}
+		else {
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Mode - HUNT");
+		}
 
 		AID[] receivers;
 
@@ -97,6 +102,62 @@ public class SignalBehaviour extends OneShotBehaviour{
 				inboxEmpty = true;
 			}
 		} while (inboxEmpty == false);
+
+		/************************************************
+		 * 
+		 * Send a signal if wumpus found
+		 * 
+		 ************************************************/
+		System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Counter wumpus blocked - +" + ((FSMExploAgent) this.myAgent).getWumpusCnt());
+		if ((!((FSMExploAgent) this.myAgent).getPosition().isEmpty()) && (((FSMExploAgent) this.myAgent).getWumpusCnt()>50)) {
+			final ACLMessage msgWumpusFound = new ACLMessage(ACLMessage.INFORM);
+			msgWumpusFound.setSender(this.myAgent.getAID());
+			msgWumpusFound.setProtocol("SHARE-WUMPUSFOUND");
+			receivers = ((FSMExploAgent) this.myAgent).getServices("Explorer");
+			for(int i = 0; i < receivers.length; i++) {
+				if (!receivers[i].equals(this.myAgent.getLocalName())) msgWumpusFound.addReceiver(receivers[i]);
+			}
+			msgWumpusFound.setContent("WUMPUS");
+			//System.out.println(this.myAgent.getLocalName() + " ---> Go hunt somewhere else");
+			//System.out.println(this.myAgent.getLocalName() + " ---> I've found a stench direction at the position : " + ((FSMExploAgent)this.myAgent).getOwnStenchDirection());
+			((AbstractDedaleAgent) this.myAgent).sendMessage(msgWumpusFound);
+		}
+
+		/************************************************
+		 * 
+		 * Receive wumpus found set direction to get out
+		 * 
+		 ************************************************/	
+
+		inboxEmpty = false; 
+		do {
+			final MessageTemplate ansWumpusFoundTemplate = MessageTemplate.MatchProtocol("SHARE-WUMPUSFOUND");			
+			final ACLMessage ansWumpusFound = this.myAgent.receive(ansWumpusFoundTemplate);
+			if (ansWumpusFound != null) {
+				try {
+					String wumpusFoundReceived = (String) ansWumpusFound.getContent();
+					//System.out.println(this.myAgent.getLocalName() + " <--- I received a stench direction of the explorer : " + stenchDirectionReceived);
+					if (wumpusFoundReceived != null) {
+						if (((FSMExploAgent) this.myAgent).getWumpusCnt()<20) {
+							((FSMExploAgent) this.myAgent).increaseGetoutCnt();
+							System.out.println(this.myAgent.getLocalName() + " <--- I'm leaving you with your wumpus");
+							((FSMExploAgent) this.myAgent).setDest_wumpusfound(true);
+							String myPosition = ((AbstractDedaleAgent)this.myAgent).getCurrentPosition();
+							String pos = null;
+							while (pos == null || (pos.equals(myPosition))) {
+								pos = ((FSMExploAgent) this.myAgent).getMyMap().getRandomNode();
+							}
+							((FSMExploAgent) this.myAgent).setDestination(pos);
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			else {
+				inboxEmpty = true; 
+			}
+		} while(inboxEmpty == false);
 
 		/************************************************
 		 * 
@@ -194,7 +255,7 @@ public class SignalBehaviour extends OneShotBehaviour{
 		 * Send my map
 		 * 
 		 ************************************************/
-		
+
 		if (((!((FSMExploAgent) this.myAgent).getPosition().isEmpty()) && (((FSMExploAgent) this.myAgent).getWait()==0)) && (((FSMExploAgent) this.myAgent).getMode()==0)) {
 			((FSMExploAgent) this.myAgent).setWait(1);
 			final ACLMessage msgMap = new ACLMessage(ACLMessage.INFORM);
@@ -230,6 +291,7 @@ public class SignalBehaviour extends OneShotBehaviour{
 					SerializableSimpleGraph<String, MapAttribute> sgMapReceived=  null;
 					try {
 						sgMapReceived = (SerializableSimpleGraph<String, MapAttribute>)ansMap.getContentObject();
+						System.out.println(this.myAgent.getLocalName() + " <--- I received a map");
 						//System.out.println(this.myAgent.getLocalName() + " <--- I received a map of an explorer : " + sgMapReceived);
 						((FSMExploAgent) this.myAgent).getMyMap().mergeMap(sgMapReceived);
 					} catch (UnreadableException e) {

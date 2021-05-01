@@ -159,28 +159,58 @@ public class MapRepresentation implements Serializable {
 		}
 		return shortestPath;
 	}
-	
+
+	public synchronized List<String> getShortestPath(String idFrom,String idTo, List<String> idPositions){
+		Graph gtemp = g;
+		SerializableSimpleGraph<String,MapAttribute> sg = new SerializableSimpleGraph<String,MapAttribute>();
+
+		if (!idPositions.isEmpty()) {
+			for (String id : idPositions) {
+				gtemp.removeNode(id);
+			}
+		}
+
+		List<String> shortestPath=new ArrayList<String>();
+
+		Dijkstra dijkstra = new Dijkstra();//number of edge
+		dijkstra.init(gtemp);
+		dijkstra.setSource(gtemp.getNode(idFrom));
+		dijkstra.compute();//compute the distance to all nodes from idFrom
+		List<Node> path=dijkstra.getPath(gtemp.getNode(idTo)).getNodePath(); //the shortest path from idFrom to idTo
+		Iterator<Node> iter=path.iterator();
+		while (iter.hasNext()){
+			shortestPath.add(iter.next().getId());
+		}
+		dijkstra.clear();
+		if (shortestPath.isEmpty()) {//The openNode is not currently reachable
+			return null;
+		}else {
+			shortestPath.remove(0);//remove the current position
+		}
+		return shortestPath;
+	}
+
 	//public synchronized List<String> getShortestPath(String idFrom,String idTo){
-    //    List<String> shortestPath=new ArrayList<String>();
-    //    
-    //    APSP apsp = new APSP();
-    //    apsp.init(g);
-    //    apsp.setDirected(false);
-    //    apsp.compute();
-    //    APSPInfo info = (APSPInfo) g.getNode(idFrom).getAttribute(APSPInfo.ATTRIBUTE_NAME);
-    //    System.out.println("APSP :" + info.getShortestPathTo(idTo));
-    //    List<Node> path = info.getShortestPathTo(idTo).getNodePath();
-    //    Iterator<Node> iter=path.iterator();
-    //    while (iter.hasNext()){
-    //        shortestPath.add(iter.next().getId());
-    //    }
-    //    if (shortestPath.isEmpty()) {//The openNode is not currently reachable
-    //        return null;
-    //    }else {
-    //        shortestPath.remove(0);//remove the current position
-    //    }
-    //    return shortestPath;
-    //}
+	//    List<String> shortestPath=new ArrayList<String>();
+	//    
+	//    APSP apsp = new APSP();
+	//    apsp.init(g);
+	//    apsp.setDirected(false);
+	//    apsp.compute();
+	//    APSPInfo info = (APSPInfo) g.getNode(idFrom).getAttribute(APSPInfo.ATTRIBUTE_NAME);
+	//    System.out.println("APSP :" + info.getShortestPathTo(idTo));
+	//    List<Node> path = info.getShortestPathTo(idTo).getNodePath();
+	//    Iterator<Node> iter=path.iterator();
+	//    while (iter.hasNext()){
+	//        shortestPath.add(iter.next().getId());
+	//    }
+	//    if (shortestPath.isEmpty()) {//The openNode is not currently reachable
+	//        return null;
+	//    }else {
+	//        shortestPath.remove(0);//remove the current position
+	//    }
+	//    return shortestPath;
+	//}
 
 	public List<Pair<List<String>, AID>> getPathsToTake(List<Pair<String, AID>> positions) {
 		//
@@ -451,62 +481,62 @@ public class MapRepresentation implements Serializable {
 		Random rand = new Random();
 		return closedNodes.get(rand.nextInt(closedNodes.size()));
 	}
-	
+
 	public List<String> getNNodes() {
-        SerializableSimpleGraph<String, MapAttribute> sgMap = this.getSerializableGraph();
-        
-        List<String> NNodes = new ArrayList<String>();
-        List<String> closedNodes = getClosedNodes();
-        for (String node : closedNodes) {
-            if (sgMap.getEdges(node).size() >= 5) {
-                System.out.println("Edges : " + sgMap.getEdges(node));
-                NNodes.add(node);
-            }
-        }
-        return NNodes;
-    }
-	
+		SerializableSimpleGraph<String, MapAttribute> sgMap = this.getSerializableGraph();
+
+		List<String> NNodes = new ArrayList<String>();
+		List<String> closedNodes = getClosedNodes();
+		for (String node : closedNodes) {
+			if (sgMap.getEdges(node).size() >= 5) {
+				//System.out.println("Edges : " + sgMap.getEdges(node));
+				NNodes.add(node);
+			}
+		}
+		return NNodes;
+	}
+
 	public String getRandomNNode() {
 		List<String> NNodes = getNNodes();
 		Random rand = new Random();
 		return NNodes.get(rand.nextInt(NNodes.size()));
 	}
-    
-    public List<String> getTwoNodes() {
-        SerializableSimpleGraph<String, MapAttribute> sgMap = this.getSerializableGraph();
-        
-        List<String> TwoNodes = new ArrayList<String>();
-        List<String> closedNodes = getClosedNodes();
-        for (String node : closedNodes) {
-            if (sgMap.getEdges(node).size() == 2) {
-                //System.out.println("Edges : " + sgMap.getEdges(node));
-                TwoNodes.add(node);
-            }
-        }
-        return TwoNodes;
-    }
-    
-    public String getRandomTwoNode() {
+
+	public List<String> getTwoNodes() {
+		SerializableSimpleGraph<String, MapAttribute> sgMap = this.getSerializableGraph();
+
+		List<String> TwoNodes = new ArrayList<String>();
+		List<String> closedNodes = getClosedNodes();
+		for (String node : closedNodes) {
+			if (sgMap.getEdges(node).size() == 2) {
+				//System.out.println("Edges : " + sgMap.getEdges(node));
+				TwoNodes.add(node);
+			}
+		}
+		return TwoNodes;
+	}
+
+	public String getRandomTwoNode() {
 		List<String> TwoNodes = getTwoNodes();
 		Random rand = new Random();
 		return TwoNodes.get(rand.nextInt(TwoNodes.size()));
 	}
-    
-    public List<String> getOneNodes() {
-        SerializableSimpleGraph<String, MapAttribute> sgMap = this.getSerializableGraph();
-        
-        List<String> OneNodes = new ArrayList<String>();
-        List<String> closedNodes = getClosedNodes();
-        for (String node : closedNodes) {
-            if (sgMap.getEdges(node).size() == 1) {
-                System.out.println("Edges : " + sgMap.getEdges(node));
-                OneNodes.add(node);
-            }
-        }
-        return OneNodes;
-    }
-    
-    public String getRandomOneNode() {
+
+	public List<String> getOneNodes() {
+		SerializableSimpleGraph<String, MapAttribute> sgMap = this.getSerializableGraph();
+
+		List<String> OneNodes = new ArrayList<String>();
+		List<String> closedNodes = getClosedNodes();
+		for (String node : closedNodes) {
+			if (sgMap.getEdges(node).size() == 1) {
+				//System.out.println("Edges : " + sgMap.getEdges(node));
+				OneNodes.add(node);
+			}
+		}
+		return OneNodes;
+	}
+
+	public String getRandomOneNode() {
 		List<String> OneNodes = getOneNodes();
 		Random rand = new Random();
 		return OneNodes.get(rand.nextInt(OneNodes.size()));
@@ -526,36 +556,5 @@ public class MapRepresentation implements Serializable {
 				.filter(n -> n.getAttribute("ui.class")==MapAttribute.open.toString())
 				.findAny()).isPresent();
 	}
-	
-	
-	public synchronized List<String> getShortestPath(String idFrom,String idTo, List<String> idPositions){
-        Graph gtemp = g;
-        
-        for (String id : idPositions) {
-            gtemp.removeNode(id);
-        }
-        
-        List<String> shortestPath=new ArrayList<String>();
-
-        Dijkstra dijkstra = new Dijkstra();//number of edge
-        dijkstra.init(gtemp);
-        dijkstra.setSource(gtemp.getNode(idFrom));
-        dijkstra.compute();//compute the distance to all nodes from idFrom
-        List<Node> path=dijkstra.getPath(gtemp.getNode(idTo)).getNodePath(); //the shortest path from idFrom to idTo
-        Iterator<Node> iter=path.iterator();
-        while (iter.hasNext()){
-            shortestPath.add(iter.next().getId());
-        }
-        dijkstra.clear();
-        if (shortestPath.isEmpty()) {//The openNode is not currently reachable
-            return null;
-        }else {
-            shortestPath.remove(0);//remove the current position
-        }
-        return shortestPath;
-    }
-
-
-
 
 }

@@ -57,6 +57,7 @@ public class FSMExploAgent extends AbstractDedaleAgent {
 	private String lastPosition = "";
 	
 	// Destination
+	private boolean dest_wumpusfound = false;
 	private boolean dest_interblocage = false;
 	private boolean dest_alea = false;
 	private boolean dest_stench = false;
@@ -64,6 +65,8 @@ public class FSMExploAgent extends AbstractDedaleAgent {
 	
 	//Counters
 	private int wait;
+	private int wumpusCnt;
+	private int getoutCnt;
 	
 	//Observations
 	private List<String> openNextNodes = new ArrayList<String>();
@@ -441,6 +444,38 @@ public class FSMExploAgent extends AbstractDedaleAgent {
 
 	public void setNextDest(String nextDest) {
 		this.nextDest = nextDest;
+	}
+
+	public int getWumpusCnt() {
+		return wumpusCnt;
+	}
+	
+	public void increaseWumpusCnt() {
+		this.wumpusCnt = this.wumpusCnt + 1;
+	}
+
+	public void setWumpusCnt(int wumpusCnt) {
+		this.wumpusCnt = wumpusCnt;
+	}
+
+	public boolean isDest_wumpusfound() {
+		return dest_wumpusfound;
+	}
+
+	public void setDest_wumpusfound(boolean dest_wumpusfound) {
+		this.dest_wumpusfound = dest_wumpusfound;
+	}
+
+	public int getGetoutCnt() {
+		return getoutCnt;
+	}
+	
+	public void increaseGetoutCnt() {
+		this.getoutCnt = this.getoutCnt + 1;
+	}
+
+	public void setGetoutCnt(int getoutCnt) {
+		this.getoutCnt = getoutCnt;
 	}
 	
 }

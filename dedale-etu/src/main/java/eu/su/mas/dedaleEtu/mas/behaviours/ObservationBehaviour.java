@@ -39,14 +39,12 @@ public class ObservationBehaviour extends OneShotBehaviour {
 		super(myAgent);
 	}
 
-	@SuppressWarnings("unlikely-arg-type")
 	@Override
 	public void action() {
 
 		String myPosition;
 		String lastPosition;
 		String nextNode = null;
-		Integer TypeGraph;
 
 		switch (((FSMExploAgent) this.myAgent).getMode()) {
 
@@ -72,6 +70,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 			if (((FSMExploAgent) this.myAgent).getMyMap() == null) {
 				((FSMExploAgent) this.myAgent).initiateMyMap(); // Initiate the map of the agent
 				((FSMExploAgent) this.myAgent).setWait(1);
+				((FSMExploAgent) this.myAgent).setGetoutCnt(0);
 				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Initialisation");
 			}
 
@@ -80,33 +79,53 @@ public class ObservationBehaviour extends OneShotBehaviour {
 			myPosition = ((AbstractDedaleAgent)this.myAgent).getCurrentPosition();
 			lastPosition = ((FSMExploAgent) this.myAgent).getLastPosition();
 
-			System.out.println(this.myAgent.getLocalName() + " <-- Position : "+ myPosition);
-			System.out.println(this.myAgent.getLocalName() + " <-- Dernère Position : "+ lastPosition);
-			System.out.println(this.myAgent.getLocalName() + " <-- Position recus : "+ ((FSMExploAgent) this.myAgent).getPosition() );
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : My position - " + myPosition);
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : My last position - " + lastPosition);
+			System.out.println(this.myAgent.getLocalName() + " <--- I see some agents there - " + ((FSMExploAgent) this.myAgent).getPosition() );
 
 			/************************************************
 			 * 
 			 * Check if someone is blocking the path
 			 * 
 			 ************************************************/
+			String myDestination = ((FSMExploAgent) this.myAgent).getDestination();
+			
+			if (((FSMExploAgent) this.myAgent).getGetoutCnt()>=10) {
+				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Exploration done (not finished)");
+				((FSMExploAgent) this.myAgent).setMode(1);
+				if (((FSMExploAgent) this.myAgent).getMyMap().checkTypeGraph()<0.05) {
+					((FSMExploAgent) this.myAgent).setStyle(0);
+					System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Tree Hunt Started");
+				}
+				else {
+					((FSMExploAgent) this.myAgent).setStyle(1);
+					System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Graph Hunt Started");
+				}
+			}
+			
+			if (myPosition.equals(myDestination)) {
+				((FSMExploAgent) this.myAgent).setDest_wumpusfound(false);
+			}
 
-
-			if (lastPosition.equals(myPosition) && ((FSMExploAgent) this.myAgent).getPosition().contains(((FSMExploAgent) this.myAgent).getNextDest()) && !(myPosition.equals(((FSMExploAgent) this.myAgent).getNextDest())) ) {
-				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Je suis bloqué par un agent");
+			if (lastPosition.equals(myPosition) && ((FSMExploAgent) this.myAgent).getPosition().contains(((FSMExploAgent) this.myAgent).getNextDest())) {
+				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm blocked by an agent");
 				String far = null;
-				while ((far == null) || (far.equals(myPosition)) || ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).isEmpty() || ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).contains(((FSMExploAgent) this.myAgent).getNextDest())){
+				while (((far == null) || (far.equals(myPosition))) || ((((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far) == null) || ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).contains(((FSMExploAgent) this.myAgent).getNextDest()))){
 					far = ((FSMExploAgent) this.myAgent).getMyMap().getRandomNode();
 				}
-				System.out.println("le noeud random"+far);
-				System.out.println("le chemin poury aller"+  ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far));
+				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I choosed to go on the node - " + far);
 				nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).get(0);
 				Random rando = new Random();
 				if(rando.nextDouble() >= 0.5) {
 					nextNode = ((FSMExploAgent) this.myAgent).getNextDest();
 				}
 			}
+			else if (((FSMExploAgent) this.myAgent).isDest_wumpusfound() && (myDestination != null)) {
+				nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, myDestination).get(0);
+			}
 			else if (lastPosition.equals(myPosition) && !((FSMExploAgent) this.myAgent).getPosition().contains(((FSMExploAgent) this.myAgent).getNextDest()) && !(myPosition.equals(((FSMExploAgent) this.myAgent).getNextDest()))) {
 				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Wumpus found");
+				((FSMExploAgent) this.myAgent).increaseWumpusCnt();
 				nextNode = ((FSMExploAgent) this.myAgent).getNextDest();
 			}
 
@@ -125,7 +144,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				 * Update informations about nodes
 				 * 
 				 ************************************************/
-
+				((FSMExploAgent) this.myAgent).setWumpusCnt(0);
 				((FSMExploAgent) this.myAgent).getMyMap().addNode(myPosition, MapAttribute.closed);
 				Iterator<Couple<String, List<Couple<Observation, Integer>>>> iter=lobs.iterator();
 
@@ -227,7 +246,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				((FSMExploAgent) this.myAgent).decreaseWait();
 			}
 
-			System.out.println(this.myAgent.getLocalName() + " <--- next node en tant que explorer:"+nextNode);
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm going on the node - "+nextNode);
 			((FSMExploAgent) this.myAgent).setLastPosition(myPosition);
 			((FSMExploAgent) this.myAgent).setNextDest(nextNode);
 			((AbstractDedaleAgent)this.myAgent).moveTo(nextNode);
@@ -243,7 +262,6 @@ public class ObservationBehaviour extends OneShotBehaviour {
 
 			//System.out.println("Hello I'm " + this.myAgent.getLocalName() + " and I'm hunting");
 
-			TypeGraph = ((FSMExploAgent) this.myAgent).getStyle();
 			myPosition = ((AbstractDedaleAgent)this.myAgent).getCurrentPosition();
 			lastPosition = ((FSMExploAgent) this.myAgent).getLastPosition();
 
@@ -256,9 +274,9 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				e.printStackTrace();
 			}
 
-			System.out.println(this.myAgent.getLocalName() + " <-- Position : "+ myPosition);
-			System.out.println(this.myAgent.getLocalName() + " <-- Dernère Position : "+ lastPosition);
-			System.out.println(this.myAgent.getLocalName() + " <-- Position recus : "+ ((FSMExploAgent) this.myAgent).getPosition() );
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : My position - " + myPosition);
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : My last position - " + lastPosition);
+			System.out.println(this.myAgent.getLocalName() + " <--- I see some agents there - " + ((FSMExploAgent) this.myAgent).getPosition() );
 
 
 			/** On regarde sur quelle type de carte on est**/
@@ -331,14 +349,19 @@ public class ObservationBehaviour extends OneShotBehaviour {
 			 * Check if someone is blocking the path
 			 * 
 			 ************************************************/
+			
+			String myDestination2 = ((FSMExploAgent) this.myAgent).getDestination();
+					
+			if (myPosition.equals(myDestination2)) {
+				((FSMExploAgent) this.myAgent).setDest_wumpusfound(false);
+			}
 
-
-			if (lastPosition.equals(myPosition) && ((FSMExploAgent) this.myAgent).getPosition().contains(((FSMExploAgent) this.myAgent).getNextDest()) && !(myPosition.equals(((FSMExploAgent) this.myAgent).getNextDest())) ) {
-				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Je suis bloqué par un agent");
-				if (!(NodeStench.isEmpty())) {// Si on percoit une odeur autour on y va
+			if (lastPosition.equals(myPosition) && ((FSMExploAgent) this.myAgent).getPosition().contains(((FSMExploAgent) this.myAgent).getNextDest())) {
+				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm blocked by an agent");
+				if (!(NodeStench.isEmpty()) && (((FSMExploAgent) this.myAgent).getStyle()==1)) {// Si on percoit une odeur autour on y va
 					for (String next : NodeStench) {
 						if (!((FSMExploAgent) this.myAgent).getPosition().contains(next)  && !(next.equals(myPosition))) {
-							System.out.println(this.myAgent.getLocalName() + " <---Je me dirige vers une odeur libre à coté"+next);
+							System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm following the stench node - " + next);
 							nextNode = next;
 							break;
 						}
@@ -346,14 +369,11 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				}
 				if(nextNode==null) { // Si on ne peut pas on va vers une case adjacente aléatoire  
 					String far = null;
-					while ((far == null) || (far.equals(myPosition)) || ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).isEmpty() || ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).contains(((FSMExploAgent) this.myAgent).getNextDest())){
-						if (((FSMExploAgent) this.myAgent).getStyle()==0) {
-							far = ((FSMExploAgent) this.myAgent).getMyMap().getRandomOneNode();
-						}
-						else {
-							far = ((FSMExploAgent) this.myAgent).getMyMap().getRandomTwoNode();
-						}
+					while (((far == null) || (far.equals(myPosition))) || (((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).isEmpty() || ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).contains(((FSMExploAgent) this.myAgent).getNextDest()))){
+						far = ((FSMExploAgent) this.myAgent).getMyMap().getRandomNode();
 					}
+					System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I choosed to go on the node - " + far);
+					//System.out.println(this.myAgent.getLocalName() + " <---Je me dirige vers une noeud aleatoire");
 					nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, far).get(0);
 					Random rando = new Random();
 					if(rando.nextDouble() >= 0.5) {
@@ -362,8 +382,14 @@ public class ObservationBehaviour extends OneShotBehaviour {
 
 				}
 			}
+			
+			else if (((FSMExploAgent) this.myAgent).isDest_wumpusfound() && (myDestination2 != null)) {
+				nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, myDestination2).get(0);
+			}
+			
 			else if (lastPosition.equals(myPosition) && !((FSMExploAgent) this.myAgent).getPosition().contains(((FSMExploAgent) this.myAgent).getNextDest()) && !(myPosition.equals(((FSMExploAgent) this.myAgent).getNextDest()))) {
 				System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Wumpus found");
+				((FSMExploAgent) this.myAgent).increaseWumpusCnt();
 				nextNode = ((FSMExploAgent) this.myAgent).getNextDest();
 			}
 
@@ -394,11 +420,12 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				 * If stench direction go there
 				 * 
 				 ************************************************/
-
-				if (NodeStench.size() == 1) {
+				
+				((FSMExploAgent) this.myAgent).setWumpusCnt(0);
+				if ((NodeStench.size() == 1) && (((FSMExploAgent) this.myAgent).getStyle()==1)) {
 					if (!(NodeStench.get(0).equals(myPosition))) {
 						nextNode = NodeStench.get(0);
-						System.out.println(this.myAgent.getLocalName() + " <--- Je me dirige vers ma stench direction"+nextNode);
+						System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm following my stench direction node - " + nextNode);
 					}
 				}
 
@@ -421,11 +448,11 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				 * 
 				 ************************************************/
 
-				if (NodeStench.size() > 1 && (nextNode==null) )  {
+				if ((NodeStench.size() > 1 && (nextNode==null)) && (((FSMExploAgent) this.myAgent).getStyle()==1))  {
 					for (String next : NodeStench) {
 						if (!((FSMExploAgent) this.myAgent).getPosition().contains(next) && !(next.equals(myPosition))) {
 							nextNode = next;
-							System.out.println(this.myAgent.getLocalName() + " <--- Je me dirige vers ma inside stench"+nextNode);
+							System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm following my inside stench node - " + nextNode);
 							//((FSMExploAgent) this.myAgent).removeNextNodes(next);
 							break;
 						}
@@ -447,13 +474,13 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				/** If the destination is not random we keep going */
 				if ( (nextNode==null) && ((FSMExploAgent) this.myAgent).getDestination()!=null && dest_alea == false && (dest_stench_direction==true || dest_inside_stench == true)) {
 					//System.out.println(((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, ((FSMExploAgent) this.myAgent).getDestination()));
-					System.out.println(this.myAgent.getLocalName() + " <--- Je continue de me diriger vers des odeurs"+((FSMExploAgent) this.myAgent).getDestination());
+					System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm following some stench node - " + ((FSMExploAgent) this.myAgent).getDestination());
 					nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, ((FSMExploAgent) this.myAgent).getDestination()).get(0);
 				}
 
 				/** If the destination is random we only go there if we have received no other information */
 				if ((nextNode==null) &&((FSMExploAgent) this.myAgent).getDestination()!=null && dest_alea == true && receive_stench_direction == false && receive_inside_stench == false) {
-					System.out.println(this.myAgent.getLocalName() + " <--- Je n'ai recus aucune indication alors je continue vers une destination aléatoire"+((FSMExploAgent) this.myAgent).getDestination());
+					System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I don't know where to go I'm going somewhere random - " + ((FSMExploAgent) this.myAgent).getDestination());
 					nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, ((FSMExploAgent) this.myAgent).getDestination()).get(0);
 				}
 
@@ -464,7 +491,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				 * 
 				 ************************************************/
 
-				if ((nextNode==null) && !(((FSMExploAgent) this.myAgent).getStenchDirection().isEmpty())) {
+				if (((nextNode==null) && !(((FSMExploAgent) this.myAgent).getStenchDirection().isEmpty())) && ((FSMExploAgent) this.myAgent).getStyle()==0) {
 					for (String dest : ((FSMExploAgent) this.myAgent).getStenchDirection()){
 						if (!(dest.equals(myPosition))) {
 							((FSMExploAgent) this.myAgent).setDestination(dest);
@@ -472,7 +499,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 							((FSMExploAgent) this.myAgent).setDestinationInsideStench(false);
 							((FSMExploAgent) this.myAgent).setDestinationAlea(false);
 							((FSMExploAgent) this.myAgent).setDestinationInterblocage(false);
-							System.out.println(this.myAgent.getLocalName() + " <--- Je vais me diriger vers une stenchDIrection"+dest);
+							System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm following my stench direction node - " + dest);
 							nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, dest).get(0);
 							break;
 						}
@@ -486,7 +513,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 				 * 
 				 ************************************************/
 
-				if (!(((FSMExploAgent) this.myAgent).getInsideStench().isEmpty()) && (nextNode==null)){
+				if ((!(((FSMExploAgent) this.myAgent).getInsideStench().isEmpty()) && (nextNode==null)) && (((FSMExploAgent) this.myAgent).getStyle()==0)){
 					for (String dest : ((FSMExploAgent) this.myAgent).getInsideStench()){
 						if (!(dest.equals(myPosition))) {
 							((FSMExploAgent) this.myAgent).setDestination(dest);
@@ -494,7 +521,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 							((FSMExploAgent) this.myAgent).setDestinationStench(false);
 							((FSMExploAgent) this.myAgent).setDestinationAlea(false);
 							((FSMExploAgent) this.myAgent).setDestinationInterblocage(false);
-							System.out.println(this.myAgent.getLocalName() + " <--- Je vais me diriger vers une InsideStench"+dest);
+							System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm following my inside stench node - " + dest);
 							nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, dest).get(0);
 							break;
 						}
@@ -523,7 +550,7 @@ public class ObservationBehaviour extends OneShotBehaviour {
 					((FSMExploAgent) this.myAgent).setDestinationStench(false);
 					((FSMExploAgent) this.myAgent).setDestinationInsideStench(false);
 					((FSMExploAgent) this.myAgent).setDestinationInterblocage(false);
-					System.out.println(this.myAgent.getLocalName() + " <--- Je vais me diriger vers une destination aléatoire"+rando);
+					System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I'm following some random node - " + rando);
 					nextNode = ((FSMExploAgent) this.myAgent).getMyMap().getShortestPath(myPosition, rando).get(0);
 
 				}
@@ -535,8 +562,8 @@ public class ObservationBehaviour extends OneShotBehaviour {
 			 * 
 			 ************************************************/
 			List<Couple<String,List<Couple<Observation,Integer>>>> l =((AbstractDedaleAgent)this.myAgent).observe();
-			System.out.println(this.myAgent.getLocalName() + " <--- Observation en tant que hunter:"+l);
-			System.out.println(this.myAgent.getLocalName() + " <--- next node en tant que hunter:"+nextNode);
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I see around me - " + l);
+			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : I choosed to go on the node - " + nextNode);
 			((FSMExploAgent) this.myAgent).setLastPosition(myPosition);
 			((FSMExploAgent) this.myAgent).setNextDest(nextNode);
 			((AbstractDedaleAgent)this.myAgent).moveTo(nextNode);
