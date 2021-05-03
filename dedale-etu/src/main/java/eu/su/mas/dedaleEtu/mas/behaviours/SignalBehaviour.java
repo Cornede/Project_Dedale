@@ -47,10 +47,10 @@ public class SignalBehaviour extends OneShotBehaviour{
 	public void action() {
 
 		if (((FSMExploAgent) this.myAgent).getMode()==0) {
-			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Mode - EXPLORATION");
+			//System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Mode - EXPLORATION");
 		}
 		else {
-			System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Mode - HUNT");
+			//System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Mode - HUNT");
 		}
 
 		AID[] receivers;
@@ -108,8 +108,8 @@ public class SignalBehaviour extends OneShotBehaviour{
 		 * Send a signal if wumpus found
 		 * 
 		 ************************************************/
-		System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Counter wumpus blocked - +" + ((FSMExploAgent) this.myAgent).getWumpusCnt());
-		if ((!((FSMExploAgent) this.myAgent).getPosition().isEmpty()) && (((FSMExploAgent) this.myAgent).getWumpusCnt()>50)) {
+		//System.out.println("[ " + this.myAgent.getLocalName() + " ]" + " : Counter wumpus blocked - +" + ((FSMExploAgent) this.myAgent).getWumpusCnt());
+		if ((!((FSMExploAgent) this.myAgent).getPosition().isEmpty()) && (((FSMExploAgent) this.myAgent).getWumpusCnt()>100)) {
 			final ACLMessage msgWumpusFound = new ACLMessage(ACLMessage.INFORM);
 			msgWumpusFound.setSender(this.myAgent.getAID());
 			msgWumpusFound.setProtocol("SHARE-WUMPUSFOUND");
@@ -138,7 +138,7 @@ public class SignalBehaviour extends OneShotBehaviour{
 					String wumpusFoundReceived = (String) ansWumpusFound.getContent();
 					//System.out.println(this.myAgent.getLocalName() + " <--- I received a stench direction of the explorer : " + stenchDirectionReceived);
 					if (wumpusFoundReceived != null) {
-						if (((FSMExploAgent) this.myAgent).getWumpusCnt()<20) {
+						if (((FSMExploAgent) this.myAgent).getWumpusCnt()<10) {
 							((FSMExploAgent) this.myAgent).increaseGetoutCnt();
 							System.out.println(this.myAgent.getLocalName() + " <--- I'm leaving you with your wumpus");
 							((FSMExploAgent) this.myAgent).setDest_wumpusfound(true);
@@ -291,7 +291,7 @@ public class SignalBehaviour extends OneShotBehaviour{
 					SerializableSimpleGraph<String, MapAttribute> sgMapReceived=  null;
 					try {
 						sgMapReceived = (SerializableSimpleGraph<String, MapAttribute>)ansMap.getContentObject();
-						System.out.println(this.myAgent.getLocalName() + " <--- I received a map");
+						//System.out.println(this.myAgent.getLocalName() + " <--- I received a map");
 						//System.out.println(this.myAgent.getLocalName() + " <--- I received a map of an explorer : " + sgMapReceived);
 						((FSMExploAgent) this.myAgent).getMyMap().mergeMap(sgMapReceived);
 					} catch (UnreadableException e) {
